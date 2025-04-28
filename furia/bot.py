@@ -2,17 +2,9 @@ import telebot
 import requests
 import json
 import atexit
-from newsapi import NewsApiClient
 
 
 bot = telebot.TeleBot("8080855422:AAFZEO19Aryh0JElba_Gi8KX9w9EQtnCOvg")
-newsapi_key = '43985f5d94b340468a03bfbcf3ed2f59'
-
-newsapi = NewsApiClient(api_key=newsapi_key)
-def get_top_news(country):
-    top_headlines = newsapi.get_top_headlines(country=country)
-    articles = top_headlines['articles']
-    return articles
 
 def get_twitch_access_token():
     url = "https://id.twitch.tv/oauth2/token"
@@ -120,17 +112,18 @@ def ajuda(msg: telebot.types.Message):
 # Comando 'equipes' atualizado
 @bot.message_handler(commands=['equipes'])
 def equipes(msg: telebot.types.Message):
-    bot.reply_to(msg, "As equipes da Furia são formadas por jogadores talentosos e dedicados.\n\n")
+    bot.reply_to(msg, "As equipes da Furia são formadas por jogadores talentosos e dedicados.\n")
     bot.reply_to(msg, "Aqui estão algumas das equipes:\n\n"
-                      "1. Furia CS:GO - A equipe de Counter-Strike: Global Offensive. Para ver o canal do [youtube] (https://www.youtube.com/channel/UCXXXX) /csgo para saber mais.\n"
-                      "2. Furia VALORANT - A equipe de VALORANT \n"
-                      "3. Furia League of Legends - A equipe de League of Legends\n"
-                      "4. Furia Futebol de 7 - A equipe de Futebol de 7(Kings League)\n\n"
-                      "Para mais informações sobre cada equipe, use o comando /valorant, /csgo, /lol, /freefire ou /fut7\n\n")
+                      "1. Furia CS:GO - A equipe de Counter-Strike: Global Offensive.\n"
+                      "2. Furia VALORANT - A equipe de VALORANT.\n"
+                      "3. Furia League of Legends - A equipe de League of Legends.\n"
+                      "4. Furia Futebol de 7 - A equipe de Futebol de 7(Kings League).\n"
+                      "5. Furia Rainbow Six - A equipe de Rainbow Six Siege.\n"
+                      "Para mais informações sobre cada equipe, use o comando /valorant, /csgo, /lol, /fut7 ou /r6\n\n")
     parse_mode = 'Markdown'
 @bot.message_handler(commands=['valorant'])
 def valorant(msg: telebot.types.Message):
-    bot.reply_to(msg, "Você sabia que Furia tem uma equipe de VALORANT? Eles são incríveis!\nAcesse o canal do [Youtube](https://www.youtube.com/@FURIAggVAL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
+    bot.reply_to(msg, "Você sabia que Furia tem uma equipe de VALORANT? Eles são incríveis!\nAcesse o canal do [Youtube](https://www.youtube.com/@FURIAggVAL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.valorant/?hl=pt-br) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 @bot.message_handler(commands=['csgo'])
 def csgo(msg: telebot.types.Message):
@@ -138,13 +131,16 @@ def csgo(msg: telebot.types.Message):
 
 @bot.message_handler(commands=['lol'])
 def lol(msg: telebot.types.Message):
-    bot.reply_to(msg, "A Furia tem uma equipe de League of Legends que compete em torneios nacionais e internacionais! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggLOL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
+    bot.reply_to(msg, "A Furia tem uma equipe de League of Legends que compete em torneios nacionais e internacionais! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggLOL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.lol/?hl=pt-br \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 
 @bot.message_handler(commands=['fut7'])
 def fut7(msg: telebot.types.Message):
         bot.reply_to(msg, "A Furia tem uma equipe de Futebol de 7 que compete na Kings League! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://youtube.com/@furiaf.c.?si=9P_ZQmZcRGer7z__)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.football/) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
+@bot.message_handler(commands=['r6'])
+def r6(msg: telebot.types.Message):
+    bot.reply_to(msg, "A Furia tem uma equipe de Rainbow Six Siege que compete em torneios nacionais e internacionais! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggR6)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.r6/?hl=pt-br) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 
 @bot.message_handler(func=lambda msg: True)  # Captura todas as mensagens
@@ -171,5 +167,60 @@ def comandos_sem_barra(msg: telebot.types.Message):
         valorant(msg)  # Chama a função do comando /valorant
     else:
         bot.reply_to(msg, "Desculpe, não entendi. Tente usar um dos comandos disponíveis ou peça ajuda com 'ajuda'.")
+
+@bot.message_handler(commands=['influencia'])
+def influencia(msg: telebot.types.Message):
+    bot.reply_to(msg, "A Furia tem uma equipe de influenciadores que criam conteúdo incrível para os fãs!\n\n"
+                      "Aqui estão alguns dos influenciadores:\n\n"
+                      "1. Gafallen - [Twitch](https://www.twitch.tv/gafallen)\n"
+                      "2. Brino - [Twitch](https://www.twitch.tv/brino)\n"
+                      "3. Mount - [Twitch](https://www.twitch.tv/mount)\n"
+                      "4. Paula Nobre - [Twitch](https://www.twitch.tv/paulanobre)\n"
+                      "5. Sofia Espanha - [Twitch](https://www.twitch.tv/sofiaespanha)\n"
+                      "6. Xarola_ - [Twitch](https://www.twitch.tv/xarola_)\n"
+                      "7. OtsukaXD - [Twitch](https://www.twitch.tv/otsukaxd)\n"
+                      "8. Mwzera - [Twitch](https://www.twitch.tv/mwzera)\n"
+                      "9. Jxmo - [Twitch](https://www.twitch.tv/jxmo)\n"
+                      "10. FURIAtv - [Twitch](https://www.twitch.tv/furiatv)\n"
+                      "11. FittipaldiBrothers - [Twitch](https://www.twitch.tv/fittipaldibrothers)\n"
+                      "12. Breeze_FPS - [Twitch](https://www.twitch.tv/breeze_fps)\n"
+                      "13. ImMadness - [Twitch](https://www.twitch.tv/immadness)\n"
+                      "14. Gabssf - [Twitch](https://www.twitch.tv/gabssf)\n"
+                      "15. PokizGames - [Twitch](https://www.twitch.tv/pokizgames)\n"
+                      "16. Kscerato - [Twitch](https://www.twitch.tv/kscerato)\n"
+                      "17. Ikee - [Twitch](https://www.twitch.tv/ikee)\n"
+                      "18. Chelok1ng - [Twitch](https://www.twitch.tv/chelok1ng)\n"
+                      "19. Qckv - [Twitch](https://www.twitch.tv/qckv)\n"
+                      "20. Raf1nhafps - [Twitch](https://www.twitch.tv/raf1nhafps)\n"
+                      "21. Crisguedes - [Twitch](https://www.twitch.tv/crisguedes)\n"
+                      "22. Yuurih - [Twitch](https://www.twitch.tv/yuurih)\n"
+                      "23. Khalil_FPS - [Twitch](https://www.twitch.tv/khalil_fps)\n"
+                      "24. Vaxlon - [Twitch](https://www.twitch.tv/vaxlon)\n"
+                      "25. Daaygamer_ - [Twitch](https://www.twitch.tv/daaygamer_)\n"
+                      "26. RafaelMoraesGM - [Twitch](https://www.twitch.tv/rafaelmoraesgm)\n"
+                      "27. Yanxnz_ - [Twitch](https://www.twitch.tv/yanxnz_)\n"
+                      "28. Herdszz - [Twitch](https://www.twitch.tv/herdszz)\n"
+                      "29. Havocfps1 - [Twitch](https://www.twitch.tv/havocfps1)\n"
+                      "30. AbleJ - [Twitch](https://www.twitch.tv/ablej)\n"
+                      "31. Izaa - [Twitch](https://www.twitch.tv/izaa)\n"
+                      "32. Xeratricky - [Twitch](https://www.twitch.tv/xeratricky)\n"
+                      "33. Upluanleal - [Twitch](https://www.twitch.tv/upluanleal)\n"
+                      "34. IVDMALUCO - [Twitch](https://www.twitch.tv/ivdmaluco)\n"
+                      "35. Igoorctg - [Twitch](https://www.twitch.tv/igoorctg)\n"
+                      "36. DhinoFF - [Twitch](https://www.twitch.tv/dhinoff)\n"
+                      "37. OManelzin_ - [Twitch](https://www.twitch.tv/omanelzin_)\n"
+                      "38. Kaah - [Twitch](https://www.twitch.tv/kaah)\n"
+                      "39. Guerri - [Twitch](https://www.twitch.tv/guerri)\n"
+                      "40. Kheyze7 - [Twitch](https://www.twitch.tv/kheyze7)\n"
+                      "41. AnaMariaBrogui - [Twitch](https://www.twitch.tv/anamariabrogui)\n"
+                      "42. MaestroPierre - [Twitch](https://www.twitch.tv/maestropierre)\n"
+                      "43. AfterNoBelo - [Twitch](https://www.twitch.tv/afternobelo)\n"
+                      "44. ZarakiCoach - [Twitch](https://www.twitch.tv/zarakicoach)\n"
+                      "45. Highs - [Twitch](https://www.twitch.tv/highs)\n"
+                      "46. MurilloMelloBR - [Twitch](https://www.twitch.tv/murillomellobr)\n"
+                      "47. Dezorganizada - [Twitch](https://www.twitch.tv/dezorganizada)\n"
+                      "48. Livinhazika - [Twitch](https://www.twitch.tv/livinhazika)\n"
+                      "49. Kvondoom - [Twitch](https://www.twitch.tv/kvondoom)\n"                      )
+    
 
 bot.infinity_polling()
