@@ -2,8 +2,17 @@ import telebot
 import requests
 import json
 import atexit
+from newsapi import NewsApiClient
+
 
 bot = telebot.TeleBot("8080855422:AAFZEO19Aryh0JElba_Gi8KX9w9EQtnCOvg")
+newsapi_key = '43985f5d94b340468a03bfbcf3ed2f59'
+
+newsapi = NewsApiClient(api_key=newsapi_key)
+def get_top_news(country):
+    top_headlines = newsapi.get_top_headlines(country=country)
+    articles = top_headlines['articles']
+    return articles
 
 def get_twitch_access_token():
     url = "https://id.twitch.tv/oauth2/token"
@@ -86,9 +95,13 @@ def dica(msg: telebot.types.Message):
         "A Furia tem uma comunidade incrível de fãs! Dá uma olhada lá no nosso [Instagram](https://www.instagram.com/furiagg) \n",
         "A Furia já participou de vários campeonatos internacionais! [clique aqui para saber mais](https://pt.wikipedia.org/wiki/Furia_Esports)\n",
         "A Furia tem uma equipe de jogadores talentosos e dedicados! para saber mais use o comando /equipes \n",
-        "Você sabia que a Furia tem uma equipe de Futebol de 7? Eles competem na Kings League!\n [clique aqui](https://www.youtube.com/@FURIAF.C.) para ver mais o conteudo prensente no youtube \n Ou caso você queira acessar o Instagram da equipe de Futebol de 7 [clique aqui](https://www.instagram.com/furia.football/) \n",
+        "Você sabia que a Furia tem uma equipe de Futebol de 7? Eles competem na Kings League!\n [clique aqui](https://youtube.com/@furiaf.c.?si=9P_ZQmZcRGer7z__) para ver mais o conteudo prensente no youtube \n Ou caso você queira acessar o Instagram da equipe de Futebol de 7 [clique aqui](https://www.instagram.com/furia.football/) \n",
         "A Furia também realiza eventos e torneios para os fãs! acesse o:\n X / Twitter \n [clique aqui](https://x.com/FURIA) \n ou o Instagram \n [clique aqui](https://www.instagram.com/furiagg) \n",
         "Você sabia que Furia tem uma equipe de VALORANT? Eles são incríveis!\nAcesse o canal do [Youtube](https://www.youtube.com/@FURIAggVAL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n",
+        "A Furia é conhecida por sua presença forte nas redes sociais! Siga-nos no [Instagram](https://www.instagram.com/furiagg) \n",
+        "A Furia tem uma equipe de CS:GO incrível! Eles competem em torneios internacionais e são muito respeitados na cena!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggCS)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n",
+        "A Furia é uma das principais organizações de esports do Brasil! Eles têm uma base de fãs incrível e são conhecidos por seu espírito competitivo!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggCS)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n",
+        "A Furia tem uma equipe de League of Legends que compete em torneios nacionais e internacionais! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggLOL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n",
     ]
     from random import choice
     parse_mode = 'Markdown' 
@@ -112,37 +125,25 @@ def equipes(msg: telebot.types.Message):
                       "1. Furia CS:GO - A equipe de Counter-Strike: Global Offensive. Para ver o canal do [youtube] (https://www.youtube.com/channel/UCXXXX) /csgo para saber mais.\n"
                       "2. Furia VALORANT - A equipe de VALORANT \n"
                       "3. Furia League of Legends - A equipe de League of Legends\n"
-                      "4. Furia Free Fire - A equipe de Free Fire\n"
-                      "5. Furia Futebol de 7 - A equipe de Futebol de 7(Kings League)\n\n"
+                      "4. Furia Futebol de 7 - A equipe de Futebol de 7(Kings League)\n\n"
                       "Para mais informações sobre cada equipe, use o comando /valorant, /csgo, /lol, /freefire ou /fut7\n\n")
     parse_mode = 'Markdown'
 @bot.message_handler(commands=['valorant'])
 def valorant(msg: telebot.types.Message):
-    bot.reply_to(msg, "A equipe de VALORANT da Furia é composta por jogadores talentosos e dedicados. Eles competem em torneios nacionais e internacionais, sempre buscando a vitória!")
+    bot.reply_to(msg, "Você sabia que Furia tem uma equipe de VALORANT? Eles são incríveis!\nAcesse o canal do [Youtube](https://www.youtube.com/@FURIAggVAL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 @bot.message_handler(commands=['csgo'])
 def csgo(msg: telebot.types.Message):
-    bot.reply_to(msg, "A equipe de CS:GO da Furia é uma das melhores do Brasil. Eles têm um grande histórico de vitórias em torneios nacionais e internacionais!")
+    bot.reply_to(msg, "A Furia tem uma equipe de CS:GO incrível! Eles competem em torneios internacionais e são muito respeitados na cena!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggCS)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 @bot.message_handler(commands=['lol'])
 def lol(msg: telebot.types.Message):
-    bot.reply_to(msg, "A equipe de League of Legends da Furia é composta por jogadores talentosos e dedicados. Eles competem em torneios nacionais e internacionais, sempre buscando a vitória!")
+    bot.reply_to(msg, "A Furia tem uma equipe de League of Legends que compete em torneios nacionais e internacionais! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggLOL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 
-
-
-
-
-
-
-
-@bot.message_handler(commands=['noticias'])
-def noticias(msg: telebot.types.Message):
-    # Exemplo de notícia
-    noticia = "⚽ A Furia está jogando agora na Kings League! Assista ao vivo: https://www.youtube.com/@FURIAF.C."
-    enviar_notificacao(noticia)
-    bot.reply_to(msg, "Notificação enviada para os usuários autorizados!")
-
+@bot.message_handler(commands=['fut7'])
+def fut7(msg: telebot.types.Message):
+        bot.reply_to(msg, "A Furia tem uma equipe de Futebol de 7 que compete na Kings League! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://youtube.com/@furiaf.c.?si=9P_ZQmZcRGer7z__)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.football/) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 
 
