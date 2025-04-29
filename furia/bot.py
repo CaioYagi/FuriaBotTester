@@ -6,65 +6,68 @@ import atexit
 
 bot = telebot.TeleBot("8080855422:AAFZEO19Aryh0JElba_Gi8KX9w9EQtnCOvg")
 
-def get_twitch_access_token():
-    url = "https://id.twitch.tv/oauth2/token"
-    params = {
-        "client_id": TWITCH_CLIENT_ID,
-        "client_secret": TWITCH_CLIENT_SECRET,
-        "grant_type": "client_credentials",
-        "redirect_uri": "https://ngrok.com/r/iep "
-    }
-    response = requests.post(url, params=params)
-    response.raise_for_status()
-    return response.json()["access_token"]
+#futura implementação com a twitch
 
-# Dicionário para armazenar o consentimento dos usuários (substitua por um banco de dados em produção)
-usuarios_autorizados = {}
 
-# Salvar autorizações em um arquivo
-def salvar_autorizacoes():
-    with open("autorizacoes.json", "w") as f:
-        json.dump(usuarios_autorizados, f)
+# def get_twitch_access_token():
+#     url = "https://id.twitch.tv/oauth2/token"
+#     params = {
+#         "client_id": TWITCH_CLIENT_ID,
+#         "client_secret": TWITCH_CLIENT_SECRET,
+#         "grant_type": "client_credentials",
+#         "redirect_uri": "https://ngrok.com/r/iep "
+#     }
+#     response = requests.post(url, params=params)
+#     response.raise_for_status()
+#     return response.json()["access_token"]
 
-# Carregar autorizações do arquivo
-def carregar_autorizacoes():
-    global usuarios_autorizados
-    try:
-        with open("autorizacoes.json", "r") as f:
-            usuarios_autorizados = json.load(f)
-    except FileNotFoundError:
-        usuarios_autorizados = {}
+# # Dicionário para armazenar o consentimento dos usuários (substitua por um banco de dados em produção)
+# usuarios_autorizados = {}
 
-# Carregar autorizações ao iniciar o bot
-carregar_autorizacoes()
+# # Salvar autorizações em um arquivo
+# def salvar_autorizacoes():
+#     with open("autorizacoes.json", "w") as f:
+#         json.dump(usuarios_autorizados, f)
 
-# Salvar autorizações ao encerrar o bot
-atexit.register(salvar_autorizacoes)
+# # Carregar autorizações do arquivo
+# def carregar_autorizacoes():
+#     global usuarios_autorizados
+#     try:
+#         with open("autorizacoes.json", "r") as f:
+#             usuarios_autorizados = json.load(f)
+#     except FileNotFoundError:
+#         usuarios_autorizados = {}
 
-# Função para enviar notificações
-def enviar_notificacao(mensagem):
-    for user_id in usuarios_autorizados:
-        try:
-            bot.send_message(user_id, mensagem)
-        except Exception as e:
-            print(f"Erro ao enviar mensagem para o usuário {user_id}: {e}")
+# # Carregar autorizações ao iniciar o bot
+# carregar_autorizacoes()
 
-# Comando para pedir autorização
-@bot.message_handler(commands=['autorizar'])
-def autorizar(msg: telebot.types.Message):
-    user_id = msg.from_user.id
-    usuarios_autorizados[user_id] = True  # Armazena o consentimento do usuário
-    bot.reply_to(msg, "Você autorizou o recebimento de notificações. Obrigado!")
+# # Salvar autorizações ao encerrar o bot
+# atexit.register(salvar_autorizacoes)
 
-# Comando para cancelar a autorização
-@bot.message_handler(commands=['cancelar'])
-def cancelar(msg: telebot.types.Message):
-    user_id = msg.from_user.id
-    if user_id in usuarios_autorizados:
-        del usuarios_autorizados[user_id]  # Remove o consentimento do usuário
-        bot.reply_to(msg, "Você cancelou o recebimento de notificações. Não enviaremos mais atualizações.")
-    else:
-        bot.reply_to(msg, "Você não está autorizado a receber notificações.")
+# # Função para enviar notificações
+# def enviar_notificacao(mensagem):
+#     for user_id in usuarios_autorizados:
+#         try:
+#             bot.send_message(user_id, mensagem)
+#         except Exception as e:
+#             print(f"Erro ao enviar mensagem para o usuário {user_id}: {e}")
+
+# # Comando para pedir autorização
+# @bot.message_handler(commands=['autorizar'])
+# def autorizar(msg: telebot.types.Message):
+#     user_id = msg.from_user.id
+#     usuarios_autorizados[user_id] = True  # Armazena o consentimento do usuário
+#     bot.reply_to(msg, "Você autorizou o recebimento de notificações. Obrigado!")
+
+# # Comando para cancelar a autorização
+# @bot.message_handler(commands=['cancelar'])
+# def cancelar(msg: telebot.types.Message):
+#     user_id = msg.from_user.id
+#     if user_id in usuarios_autorizados:
+#         del usuarios_autorizados[user_id]  # Remove o consentimento do usuário
+#         bot.reply_to(msg, "Você cancelou o recebimento de notificações. Não enviaremos mais atualizações.")
+#     else:
+#         bot.reply_to(msg, "Você não está autorizado a receber notificações.")
 
 #comando /start
 @bot.message_handler(commands=['start'])
