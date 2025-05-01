@@ -63,6 +63,13 @@ TARGET_CHANNEL = [
     'dezorganizada',
     'livinhazika',
     'kvondoom',
+    # Páginas oficiais da Furia para jogos
+    'furiagg',
+    'furiaggcs',
+    'furiagglol',
+    'furiaggval',
+    'furiagg_r6',
+    'furiaf.c'
 ]
 
 def get_twitch_access_token():
@@ -425,6 +432,13 @@ def influencia(msg: telebot.types.Message):
     'dezorganizada',
     'livinhazika',
     'kvondoom',
+    # Páginas oficiais da Furia para jogos
+    'furiagg',
+    'furiaggcs',
+    'furiagglol',
+    'furiaggval',
+    'furiagg_r6',
+    'furiaf.c'
 ]
 
 # Função para verificar se os streamers estão ao vivo
@@ -435,15 +449,19 @@ def verificar_lives():
         "Authorization": f"Bearer {access_token}"
     }
     url = "https://api.twitch.tv/helix/streams"
-    params = {
-        "user_login": TARGET_CHANNEL  # Lista de streamers
-    }
-    response = requests.get(url, headers=headers, params={"user_login": TARGET_CHANNEL})
-    response.raise_for_status()
-    data = response.json()
+
+    # A API da Twitch aceita múltiplos valores para 'user_login'
+    streamers_ao_vivo = []
+    for streamer in TARGET_CHANNEL:
+        params = {"user_login": streamer}
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        data = response.json()
+        for stream in data["data"]:
+            streamers_ao_vivo.append(stream["user_name"])
 
     # Retorna uma lista de streamers que estão ao vivo
-    return [stream["user_name"] for stream in data["data"]]
+    return streamers_ao_vivo
 
 # Comando para ativar notificações de lives
 @bot.message_handler(commands=['notificar', 'notify'])
@@ -488,5 +506,9 @@ def enviar_notificacoes_lives():
 
 # Inicia a verificação de lives em uma thread separada
 threading.Thread(target=enviar_notificacoes_lives, daemon=True).start()
+
+if __name__ == "__main__":
+    streamers_ao_vivo = verificar_lives()
+    print(f"Streamers ao vivo: {streamers_ao_vivo}")
 
 bot.infinity_polling()
