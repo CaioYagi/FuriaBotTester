@@ -8,6 +8,37 @@ import twitchAPI
 from twitchAPI.twitch import Twitch
 import time
 import threading
+import sqlite3
+
+# Conectar ao banco de dados (ou criar se não existir)
+conn = sqlite3.connect('bot_furia.db')  # Nome do arquivo do banco de dados
+cursor = conn.cursor()
+
+# Criar a tabela 'usuarios'
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS usuarios (
+    user_id INTEGER PRIMARY KEY,  -- ID único do usuário
+    idioma TEXT DEFAULT 'pt',     -- Idioma preferido do usuário (padrão: português)
+    autorizado INTEGER DEFAULT 0  -- Status de autorização (0 = não autorizado, 1 = autorizado)
+)
+''')
+
+# Confirmar as alterações e fechar a conexão
+conn.commit()
+conn.close()
+
+print("Tabela 'usuarios' criada com sucesso!")
+
+conn = sqlite3.connect('bot_furia.db')
+cursor = conn.cursor()
+
+# Listar todas as tabelas no banco de dados
+cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+tabelas = cursor.fetchall()
+
+print("Tabelas no banco de dados:", tabelas)
+
+conn.close()
 
 bot = telebot.TeleBot("8080855422:AAEeQc9bJbXElycdJ1hMZxI8RrbeFVrWJMk")
 
@@ -77,12 +108,13 @@ def get_twitch_access_token():
     params = {
         "client_id": "0v1tqtpk3qys3c6u71nwrwp7t7zzvl",
         "client_secret": "k17uu0ggt74h8vxkeuewlnwi6c0zmd",
-        "grant_type": "client_credentials",
-        "redirect_uri": "https://ngrok.com/r/iep "
+        "grant_type": "client_credentials"
     }
     response = requests.post(url, params=params)
     response.raise_for_status()
-    return response.json()["access_token"]
+    token = response.json()["access_token"]
+    print(f"Access Token: {token}")  # Log para depuração
+    return token
 
 # Dicionário para armazenar o consentimento dos usuários (substitua por um banco de dados em produção)
 usuarios_autorizados = {}
@@ -109,6 +141,12 @@ atexit.register(salvar_autorizacoes)
 
 # Função para enviar notificações
 def enviar_notificacao(mensagem):
+    conn = sqlite3.connect('bot_furia.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT user_id FROM usuarios WHERE autorizado = 1')
+    usuarios_autorizados = [row[0] for row in cursor.fetchall()]
+    conn.close()
+
     for user_id in usuarios_autorizados:
         try:
             bot.send_message(user_id, mensagem)
@@ -140,14 +178,57 @@ idiomas_usuarios = {}  # Armazena o idioma de cada usuário (user_id)
 def english(msg: telebot.types.Message):
     user_id = msg.from_user.id
     idiomas_usuarios[user_id] = "en"  # Define o idioma do usuário como inglês
-    bot.reply_to(msg, "Language switched to English! You will now receive notifications in English.")
+    bot.reply_to(msg, "Language switched to English! You will now receive notifications and responses in English.")
+    
+    # Mostrar os comandos disponíveis em inglês
+    bot.reply_to(msg, "Here are some commands you can use:\n\n"
+                      "/help - To get help\n"
+                      "/tip - To receive a random tip\n"
+                      "/teams - To learn more about Furia's teams\n"
+                      "/info - To learn more about me\n"
+                      "/influencers - To learn more about Furia's influencers\n"
+                      "/links - To get Furia's links\n"
+                      "/portugues - To change the language to Portuguese\n"
+                      "/notify - To activate live notifications\n"
+                      "/cancel - To cancel live notifications\n")
 
 # Função para alternar o idioma para português
 @bot.message_handler(commands=['portugues'])
 def portugues(msg: telebot.types.Message):
     user_id = msg.from_user.id
     idiomas_usuarios[user_id] = "pt"  # Define o idioma do usuário como português
-    bot.reply_to(msg, "Idioma alterado para Português! Agora você receberá notificações em Português.")
+    bot.reply_to(msg, "Idioma alterado para Português! Agora você receberá notificações e respostas em Português.")
+    
+    # Mostrar os comandos disponíveis em português
+    bot.reply_to(msg, "Aqui estão alguns comandos que você pode usar:\n\n"
+                      "/ajuda - Para obter ajuda\n"
+                      "/dica - Para receber uma dica aleatória\n"
+                      "/equipes - Para saber mais sobre as equipes da Furia\n"
+                      "/info - Para saber mais sobre mim\n"
+                      "/influencia - Para saber mais sobre os influenciadores da Furia\n"
+                      "/links - Para obter links da Furia\n"
+                      "/english - Para mudar o idioma para inglês\n"
+                      "/notificar - Para ativar notificações de lives\n"
+                      "/cancelar - Para cancelar notificações de lives\n")
+
+@bot.message_handler(commands=['links'])
+def links(msg: telebot.types.Message):
+    user_id = msg.from_user.id
+    if idiomas_usuarios.get(user_id, "pt") == "en":
+        bot.reply_to(msg, "Here are some important links related to Furia:\n\n"
+                          "1. Official Website: [Furia](https://www.furia.gg)\n"
+                          "2. Instagram: [Furia Instagram](https://www.instagram.com/furiagg)\n"
+                          "3. Twitter: [Furia Twitter](https://x.com/FURIA)\n"
+                          "4. YouTube: [Furia YouTube](https://www.youtube.com/@FURIA)\n"
+                          "5. Discord: [Furia Discord](https://discord.gg/furia)\n")
+    else:
+        bot.reply_to(msg, "Aqui estão alguns links importantes relacionados à Furia:\n\n"
+                          "1. Site Oficial: [Furia](https://www.furia.gg)\n"
+                          "2. Instagram: [Furia Instagram](https://www.instagram.com/furiagg)\n"
+                          "3. Twitter: [Furia Twitter](https://x.com/FURIA)\n"
+                          "4. YouTube: [Furia YouTube](https://www.youtube.com/@FURIA)\n"
+                          "5. Discord: [Furia Discord](https://discord.gg/furia)\n")
+
 
 # Comando /start atualizado
 @bot.message_handler(commands=['start'])
@@ -160,8 +241,8 @@ def start(msg: telebot.types.Message):
                           "/teams - To learn more about Furia's teams\n"
                           "/info - To learn more about me\n"
                           "/influencers - To learn more about Furia's influencers\n"
-                          "/twitch - To learn more about Furia on Twitch\n"
                           "/links - To get Furia's links\n"
+                          "/portugues - Para mudar o idioma para português\n"
                           "/notify - To activate live notifications\n"
                           "/cancel - To cancel live notifications\n")
 
@@ -172,8 +253,8 @@ def start(msg: telebot.types.Message):
                           "/equipes - Para saber mais sobre as equipes da Furia\n"
                           "/info - Para saber mais sobre mim\n"
                           "/influencia - Para saber mais sobre os influenciadores da Furia\n"
-                          "/twitch - Para saber mais sobre a Furia na Twitch\n"
                           "/links - Para obter links da Fúria\n"
+                          "/english - To change language\n"
                           "/notificar - Para ativar notificações de lives\n"
                           "/cancelar - Para cancelar notificações de lives\n")
 
@@ -309,7 +390,17 @@ def comandos_sem_barra(msg: telebot.types.Message):
                       'hi','hello','hey','hi bot','hello bot','hey bot',
                       'hi Bot','hello Bot','hey Bot','Hi bot','Hello bot','Hey bot',
                       'começar','começar','começar bot','começar Bot','Começar bot','Começar Bot',
-                      'Começar','Começar Bot','Começar bot','Começar Bot','começar bot','começar Bot',]
+                      'Começar','Começar Bot','Começar bot','Começar Bot','começar bot','começar Bot',
+                      'oii tudo bem?'  'oii tudo certo?','oii tudo bem bot?','oii tudo certo bot?', 'oi tudo bem?', 'oi tudo certo?',
+                      'oi tudo bem bot?','oi tudo certo bot?','ola tudo bem?','ola tudo certo?','ola tudo bem bot?','ola tudo certo bot?',
+                      'Oii tudo bem?','Oii tudo certo?','Oii tudo bem bot?','Oii tudo certo bot?','Ola tudo bem?','Ola tudo certo?',
+                      'Oi tudo bem?','Oi tudo certo?','Oi tudo bem bot?','Oi tudo certo bot?','Ola tudo bem?','Ola tudo certo?',
+                        'Ola tudo bem bot?','Ola tudo certo bot?','Eai tudo bem?','Eai tudo certo?','Eai tudo bem bot?','Eai tudo certo bot?',
+                        'Eai tudo bem?','Eai tudo certo?','Eai tudo bem bot?','Eai tudo certo bot?','Salve tudo bem?','Salve tudo certo?',
+                        'Salve tudo bem bot?','Salve tudo certo bot?','Salveee tudo bem?','Salveee tudo certo?','Salvee tudo bem?',
+                        'Salvee tudo certo?','Salveee tudo bem bot?','Salveee tudo certo bot?','Salvee tudo bem bot?','Salvee tudo certo bot?',
+                        
+                      ]
 
     if texto in palavras_start:
         start(msg)  # Chama a função do comando /start
@@ -432,16 +523,18 @@ def influencia(msg: telebot.types.Message):
     'dezorganizada',
     'livinhazika',
     'kvondoom',
-    # Páginas oficiais da Furia para jogos
-    'furiagg',
-    'furiaggcs',
-    'furiagglol',
-    'furiaggval',
-    'furiagg_r6',
-    'furiaf.c'
+    
 ]
 
-# Função para verificar se os streamers estão ao vivo
+# Lista de páginas oficiais de jogos
+TARGET_CHANNEL = [
+    'valorant_br',
+    'rainbowsix_br',
+    'lol_br',
+    'csgo_br',
+]
+
+# Função para verificar se os streamers estão ao vivo e filtrar pelo título
 def verificar_lives():
     access_token = get_twitch_access_token()
     headers = {
@@ -450,34 +543,54 @@ def verificar_lives():
     }
     url = "https://api.twitch.tv/helix/streams"
 
-    # A API da Twitch aceita múltiplos valores para 'user_login'
+    # Dividir a lista de streamers em lotes de até 100 (limite da API da Twitch)
     streamers_ao_vivo = []
-    for streamer in TARGET_CHANNEL:
-        params = {"user_login": streamer}
+    for i in range(0, len(TARGET_CHANNEL), 100):
+        batch = TARGET_CHANNEL[i:i + 100]  # Lote de até 100 streamers
+        params = [("user_login", streamer) for streamer in batch]  # Enviar múltiplos valores como lista de tuplas
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         data = response.json()
-        for stream in data["data"]:
-            streamers_ao_vivo.append(stream["user_name"])
 
-    # Retorna uma lista de streamers que estão ao vivo
+        # Filtrar lives pelo título
+        for stream in data["data"]:
+            titulo = stream["title"].lower()
+            if "furia" in titulo or "fur" in titulo:
+                streamers_ao_vivo.append({
+                    "user_name": stream["user_name"],
+                    "title": stream["title"],
+                    "viewer_count": stream["viewer_count"]
+                })
+
+    # Retorna uma lista de streamers que estão ao vivo e com títulos relevantes
     return streamers_ao_vivo
 
-# Comando para ativar notificações de lives
 @bot.message_handler(commands=['notificar', 'notify'])
 def notificar(msg: telebot.types.Message):
+    print(f"Comando recebido: {msg.text}")  # Log para depuração
     user_id = msg.from_user.id
-    if user_id not in usuarios_autorizados:
-        usuarios_autorizados[user_id] = True  # Adiciona o usuário à lista de autorizados
-        if idiomas_usuarios.get(user_id, "pt") == "en":
-            bot.reply_to(msg, "You have activated live notifications! We will send updates whenever a Furia streamer goes live.")
+    print(f"ID do usuário: {user_id}")  # Log para depuração
+    idioma = idiomas_usuarios.get(user_id, "pt")  # Obtém o idioma do usuário (padrão: português)
+    
+    # Verifica se o usuário já está autorizado
+    conn = sqlite3.connect('bot_furia.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT autorizado FROM usuarios WHERE user_id = ?', (user_id,))
+    resultado = cursor.fetchone()
+    
+    if resultado is None or resultado[0] == 0:  # Usuário não está autorizado ou não existe
+        adicionar_usuario(user_id, idioma=idioma, autorizado=1)
+        if idioma == "en":
+            bot.reply_to(msg, "You have activated live notifications! We will send updates whenever a Furia-related stream goes live.")
         else:
-            bot.reply_to(msg, "Você ativou as notificações de lives! Enviaremos atualizações sempre que um streamer da Furia estiver ao vivo.")
+            bot.reply_to(msg, "Você ativou as notificações de lives! Enviaremos atualizações sempre que uma live relacionada à Furia estiver ao vivo.")
     else:
-        if idiomas_usuarios.get(user_id, "pt") == "en":
+        if idioma == "en":
             bot.reply_to(msg, "You are already subscribed to receive live notifications!")
         else:
             bot.reply_to(msg, "Você já está inscrito para receber notificações de lives!")
+    
+    conn.close()
 
 # Função para enviar notificações sobre lives
 def enviar_notificacoes_lives():
@@ -485,20 +598,28 @@ def enviar_notificacoes_lives():
         try:
             streamers_ao_vivo = verificar_lives()
             if streamers_ao_vivo:
-                for user_id in usuarios_autorizados:
-                    idioma = idiomas_usuarios.get(user_id, "pt")  # Obtém o idioma do usuário (padrão: português)
+                # Obter usuários autorizados do banco de dados
+                conn = sqlite3.connect('bot_furia.db')
+                cursor = conn.cursor()
+                cursor.execute('SELECT user_id, idioma FROM usuarios WHERE autorizado = 1')
+                usuarios_autorizados = cursor.fetchall()
+                conn.close()
+                
+                for user_id, idioma in usuarios_autorizados:
                     if idioma == "en":
-                        mensagem = "🔴 **Live on Twitch!**\nThe following streamers are live now:\n\n"
-                        mensagem += "\n".join([f"- {streamer}" for streamer in streamers_ao_vivo])
+                        mensagem = "🔴 **Live on Twitch!**\nThe following streams related to Furia are live now:\n\n"
+                        mensagem += "\n".join([f"- {stream['user_name']} (Viewers: {stream['viewer_count']})\nTitle: {stream['title']}" for stream in streamers_ao_vivo])
                         mensagem += "\n\nVisit Twitch to watch!"
                     else:
-                        mensagem = "🔴 **Live na Twitch!**\nOs seguintes streamers estão ao vivo agora:\n\n"
-                        mensagem += "\n".join([f"- {streamer}" for streamer in streamers_ao_vivo])
+                        mensagem = "🔴 **Live na Twitch!**\nAs seguintes lives relacionadas à Furia estão ao vivo agora:\n\n"
+                        mensagem += "\n".join([f"- {stream['user_name']} (Espectadores: {stream['viewer_count']})\nTítulo: {stream['title']}" for stream in streamers_ao_vivo])
                         mensagem += "\n\nAcesse a Twitch para assistir!"
+                    
                     try:
                         bot.send_message(user_id, mensagem, parse_mode='Markdown')
                     except Exception as e:
                         print(f"Erro ao enviar mensagem para o usuário {user_id}: {e}")
+            
             time.sleep(300)  # Verifica a cada 5 minutos
         except Exception as e:
             print(f"Erro ao verificar lives: {e}")
@@ -507,8 +628,72 @@ def enviar_notificacoes_lives():
 # Inicia a verificação de lives em uma thread separada
 threading.Thread(target=enviar_notificacoes_lives, daemon=True).start()
 
+def adicionar_usuario(user_id, idioma='pt', autorizado=1):
+    conn = sqlite3.connect('bot_furia.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT OR REPLACE INTO usuarios (user_id, idioma, autorizado)
+        VALUES (?, ?, ?)
+    ''', (user_id, idioma, autorizado))
+    conn.commit()
+    conn.close()
+
+def listar_usuarios_autorizados():
+    conn = sqlite3.connect('bot_furia.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT user_id FROM usuarios WHERE autorizado = 1')
+    usuarios = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return usuarios
+
+def atualizar_idioma(user_id, idioma):
+    conn = sqlite3.connect('bot_furia.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE usuarios SET idioma = ? WHERE user_id = ?', (idioma, user_id))
+    conn.commit()
+    conn.close()
+
+def remover_usuario(user_id):
+    conn = sqlite3.connect('bot_furia.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM usuarios WHERE user_id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+
+def atualizar_autorizacao(user_id, autorizado):
+    conn = sqlite3.connect('bot_furia.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE usuarios SET autorizado = ? WHERE user_id = ?', (autorizado, user_id))
+    conn.commit()
+    conn.close()
+
+@bot.message_handler(commands=['cancelar', 'cancel'])
+def cancelar(msg: telebot.types.Message):
+    user_id = msg.from_user.id
+    idioma = idiomas_usuarios.get(user_id, "pt")  # Obtém o idioma do usuário (padrão: português)
+    
+    # Verifica se o usuário está autorizado
+    conn = sqlite3.connect('bot_furia.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT autorizado FROM usuarios WHERE user_id = ?', (user_id,))
+    resultado = cursor.fetchone()
+    
+    if resultado and resultado[0] == 1:  # Usuário está autorizado
+        atualizar_autorizacao(user_id, autorizado=0)
+        if idioma == "en":
+            bot.reply_to(msg, "You have canceled live notifications. We will no longer send updates.")
+        else:
+            bot.reply_to(msg, "Você cancelou o recebimento de notificações. Não enviaremos mais atualizações.")
+    else:
+        if idioma == "en":
+            bot.reply_to(msg, "You are not subscribed to receive notifications.")
+        else:
+            bot.reply_to(msg, "Você não está inscrito para receber notificações.")
+    
+    conn.close()
+
 if __name__ == "__main__":
     streamers_ao_vivo = verificar_lives()
     print(f"Streamers ao vivo: {streamers_ao_vivo}")
 
-bot.infinity_polling()
+    bot.infinity_polling()
