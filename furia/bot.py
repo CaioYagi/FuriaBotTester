@@ -2,149 +2,288 @@ import telebot
 import requests
 import json
 import atexit
+import asyncio
+import random
+import twitchAPI
+from twitchAPI.twitch import Twitch
+import time
+import threading
 
+bot = telebot.TeleBot("8080855422:AAEeQc9bJbXElycdJ1hMZxI8RrbeFVrWJMk")
 
-bot = telebot.TeleBot("8080855422:AAFZEO19Aryh0JElba_Gi8KX9w9EQtnCOvg")
+twitch = Twitch("0v1tqtpk3qys3c6u71nwrwp7t7zzvl", "k17uu0ggt74h8vxkeuewlnwi6c0zmd")
+twitch.authenticate_app([])
+TARGET_CHANNEL = [
+    'gafallen',
+    'brino',
+    'mount',
+    'paulanobre',
+    'sofiaespanha',
+    'xarola_',
+    'otsukaxd',
+    'mwzera',
+    'jxmo',
+    'furiatv',
+    'fittipaldibrothers',
+    'breeze_fps',
+    'immadness',
+    'gabssf',
+    'pokizgames',
+    'kscerato',
+    'ikee',
+    'chelok1ng',
+    'qckv',
+    'raf1nhafps',
+    'crisguedes',
+    'yuurih',
+    'khalil_fps',
+    'vaxlon',
+    'daaygamer_',
+    'rafaelmoraesgm',
+    'yanxnz_',
+    'herdszz',
+    'havocfps1',
+    'ablej',
+    'izaa',
+    'xeratricky',
+    'upluanleal',
+    'ivdmaluco',
+    'igoorctg',
+    'dhinoff',
+    'omanelzin_',
+    'kaah',
+    'guerri',
+    'kheyze7',
+    'anamariabrogui',
+    'maestropierre',
+    'afternobelo',
+    'zarakicoach',
+    'highs',
+    'murillomellobr',
+    'dezorganizada',
+    'livinhazika',
+    'kvondoom',
+]
 
-#futura implementação com a twitch
+def get_twitch_access_token():
+    url = "https://id.twitch.tv/oauth2/token"
+    params = {
+        "client_id": "0v1tqtpk3qys3c6u71nwrwp7t7zzvl",
+        "client_secret": "k17uu0ggt74h8vxkeuewlnwi6c0zmd",
+        "grant_type": "client_credentials",
+        "redirect_uri": "https://ngrok.com/r/iep "
+    }
+    response = requests.post(url, params=params)
+    response.raise_for_status()
+    return response.json()["access_token"]
 
+# Dicionário para armazenar o consentimento dos usuários (substitua por um banco de dados em produção)
+usuarios_autorizados = {}
 
-# def get_twitch_access_token():
-#     url = "https://id.twitch.tv/oauth2/token"
-#     params = {
-#         "client_id": TWITCH_CLIENT_ID,
-#         "client_secret": TWITCH_CLIENT_SECRET,
-#         "grant_type": "client_credentials",
-#         "redirect_uri": "https://ngrok.com/r/iep "
-#     }
-#     response = requests.post(url, params=params)
-#     response.raise_for_status()
-#     return response.json()["access_token"]
+# Salvar autorizações em um arquivo
+def salvar_autorizacoes():
+    with open("autorizacoes.json", "w") as f:
+        json.dump(usuarios_autorizados, f)
 
-# # Dicionário para armazenar o consentimento dos usuários (substitua por um banco de dados em produção)
-# usuarios_autorizados = {}
+# Carregar autorizações do arquivo
+def carregar_autorizacoes():
+    global usuarios_autorizados
+    try:
+        with open("autorizacoes.json", "r") as f:
+            usuarios_autorizados = json.load(f)
+    except FileNotFoundError:
+        usuarios_autorizados = {}
 
-# # Salvar autorizações em um arquivo
-# def salvar_autorizacoes():
-#     with open("autorizacoes.json", "w") as f:
-#         json.dump(usuarios_autorizados, f)
+# Carregar autorizações ao iniciar o bot
+carregar_autorizacoes()
 
-# # Carregar autorizações do arquivo
-# def carregar_autorizacoes():
-#     global usuarios_autorizados
-#     try:
-#         with open("autorizacoes.json", "r") as f:
-#             usuarios_autorizados = json.load(f)
-#     except FileNotFoundError:
-#         usuarios_autorizados = {}
+# Salvar autorizações ao encerrar o bot
+atexit.register(salvar_autorizacoes)
 
-# # Carregar autorizações ao iniciar o bot
-# carregar_autorizacoes()
+# Função para enviar notificações
+def enviar_notificacao(mensagem):
+    for user_id in usuarios_autorizados:
+        try:
+            bot.send_message(user_id, mensagem)
+        except Exception as e:
+            print(f"Erro ao enviar mensagem para o usuário {user_id}: {e}")
 
-# # Salvar autorizações ao encerrar o bot
-# atexit.register(salvar_autorizacoes)
+# Comando para pedir autorização
+@bot.message_handler(commands=['autorizar'])
+def autorizar(msg: telebot.types.Message):
+    user_id = msg.from_user.id
+    usuarios_autorizados[user_id] = True  # Armazena o consentimento do usuário
+    bot.reply_to(msg, "Você autorizou o recebimento de notificações. Obrigado!")
 
-# # Função para enviar notificações
-# def enviar_notificacao(mensagem):
-#     for user_id in usuarios_autorizados:
-#         try:
-#             bot.send_message(user_id, mensagem)
-#         except Exception as e:
-#             print(f"Erro ao enviar mensagem para o usuário {user_id}: {e}")
+# Comando para cancelar a autorização
+@bot.message_handler(commands=['cancelar'])
+def cancelar(msg: telebot.types.Message):
+    user_id = msg.from_user.id
+    if user_id in usuarios_autorizados:
+        del usuarios_autorizados[user_id]  # Remove o consentimento do usuário
+        bot.reply_to(msg, "Você cancelou o recebimento de notificações. Não enviaremos mais atualizações.")
+    else:
+        bot.reply_to(msg, "Você não está autorizado a receber notificações.")
 
-# # Comando para pedir autorização
-# @bot.message_handler(commands=['autorizar'])
-# def autorizar(msg: telebot.types.Message):
-#     user_id = msg.from_user.id
-#     usuarios_autorizados[user_id] = True  # Armazena o consentimento do usuário
-#     bot.reply_to(msg, "Você autorizou o recebimento de notificações. Obrigado!")
+# Variável global para armazenar o idioma dos usuários
+idiomas_usuarios = {}  # Armazena o idioma de cada usuário (user_id)
 
-# # Comando para cancelar a autorização
-# @bot.message_handler(commands=['cancelar'])
-# def cancelar(msg: telebot.types.Message):
-#     user_id = msg.from_user.id
-#     if user_id in usuarios_autorizados:
-#         del usuarios_autorizados[user_id]  # Remove o consentimento do usuário
-#         bot.reply_to(msg, "Você cancelou o recebimento de notificações. Não enviaremos mais atualizações.")
-#     else:
-#         bot.reply_to(msg, "Você não está autorizado a receber notificações.")
+# Função para alternar o idioma para inglês
+@bot.message_handler(commands=['english'])
+def english(msg: telebot.types.Message):
+    user_id = msg.from_user.id
+    idiomas_usuarios[user_id] = "en"  # Define o idioma do usuário como inglês
+    bot.reply_to(msg, "Language switched to English! You will now receive notifications in English.")
 
-#comando /start
+# Função para alternar o idioma para português
+@bot.message_handler(commands=['portugues'])
+def portugues(msg: telebot.types.Message):
+    user_id = msg.from_user.id
+    idiomas_usuarios[user_id] = "pt"  # Define o idioma do usuário como português
+    bot.reply_to(msg, "Idioma alterado para Português! Agora você receberá notificações em Português.")
+
+# Comando /start atualizado
 @bot.message_handler(commands=['start'])
 def start(msg: telebot.types.Message):
-    bot.reply_to(msg, "Olá, sou o BotFuria! Como posso ajudar? Aqui estão alguns comandos que você pode usar:\n\n"
-                      "/ajuda - Para obter ajuda\n"
-                      "/dica - Para receber uma dica aleatória\n"
-                      "/equipes - Para saber mais sobre as equipes da Furia\n"
-                      "/info - Para saber mais sobre mim\n"
-                      "/influencia - Para saber mais sobre os influenciadores da Furia\n"
-                      "/twitch - Para saber mais sobre a Furia na Twitch\n"
-                      "/links - Para obter links da Fúria\n")
+    user_id = msg.from_user.id
+    if idiomas_usuarios.get(user_id, "pt") == "en":
+        bot.reply_to(msg, "Hello, I'm BotFuria! How can I help you? Here are some commands you can use:\n\n"
+                          "/help - To get help\n"
+                          "/tip - To receive a random tip\n"
+                          "/teams - To learn more about Furia's teams\n"
+                          "/info - To learn more about me\n"
+                          "/influencers - To learn more about Furia's influencers\n"
+                          "/twitch - To learn more about Furia on Twitch\n"
+                          "/links - To get Furia's links\n"
+                          "/notify - To activate live notifications\n"
+                          "/cancel - To cancel live notifications\n")
 
+    else:
+        bot.reply_to(msg, "Olá, sou o BotFuria! Como posso ajudar? Aqui estão alguns comandos que você pode usar:\n\n"
+                          "/ajuda - Para obter ajuda\n"
+                          "/dica - Para receber uma dica aleatória\n"
+                          "/equipes - Para saber mais sobre as equipes da Furia\n"
+                          "/info - Para saber mais sobre mim\n"
+                          "/influencia - Para saber mais sobre os influenciadores da Furia\n"
+                          "/twitch - Para saber mais sobre a Furia na Twitch\n"
+                          "/links - Para obter links da Fúria\n"
+                          "/notificar - Para ativar notificações de lives\n"
+                          "/cancelar - Para cancelar notificações de lives\n")
 
-# Adicionando um novo comando 'dica'
-@bot.message_handler(commands=['dica'])
-def dica(msg: telebot.types.Message):
-    dicas = [
-        "Já comprou a camiseta da Furia com a Adidas?FICOU LINDAAA!!! Dá uma olhada lá no [site!] (https://www.furia.gg) \n",
-        "A Furia tem uma comunidade incrível de fãs! Dá uma olhada lá no nosso [Instagram](https://www.instagram.com/furiagg) \n",
-        "A Furia já participou de vários campeonatos internacionais! [clique aqui para saber mais](https://pt.wikipedia.org/wiki/Furia_Esports)\n",
-        "A Furia tem uma equipe de jogadores talentosos e dedicados! para saber mais use o comando /equipes \n",
-        "Você sabia que a Furia tem uma equipe de Futebol de 7? Eles competem na Kings League!\n [clique aqui](https://youtube.com/@furiaf.c.?si=9P_ZQmZcRGer7z__) para ver mais o conteudo prensente no youtube \n Ou caso você queira acessar o Instagram da equipe de Futebol de 7 [clique aqui](https://www.instagram.com/furia.football/) \n",
-        "A Furia também realiza eventos e torneios para os fãs! acesse o:\n X / Twitter \n [clique aqui](https://x.com/FURIA) \n ou o Instagram \n [clique aqui](https://www.instagram.com/furiagg) \n",
-        "Você sabia que Furia tem uma equipe de VALORANT? Eles são incríveis!\nAcesse o canal do [Youtube](https://www.youtube.com/@FURIAggVAL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n",
-        "A Furia é conhecida por sua presença forte nas redes sociais! Siga-nos no [Instagram](https://www.instagram.com/furiagg) \n",
-        "A Furia tem uma equipe de CS:GO incrível! Eles competem em torneios internacionais e são muito respeitados na cena!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggCS)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n",
-        "A Furia é uma das principais organizações de esports do Brasil! Eles têm uma base de fãs incrível e são conhecidos por seu espírito competitivo!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggCS)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n",
-        "A Furia tem uma equipe de League of Legends que compete em torneios nacionais e internacionais! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggLOL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n",
-    ]
-    from random import choice
-    parse_mode = 'Markdown' 
-    bot.reply_to(msg, choice(dicas), parse_mode=parse_mode)
-
-# Comando 'ajuda' atualizado
-@bot.message_handler(commands=['ajuda'])
+# Comando /ajuda ou /help atualizado
+@bot.message_handler(commands=['ajuda', 'help'])
 def ajuda(msg: telebot.types.Message):
-    bot.reply_to(msg, "Estou aqui para ajudar! Aqui estão alguns comandos que você pode usar:\n\n"
-                      "/start - Para iniciar uma conversa comigo\n"
-                      "/info - Para saber mais sobre mim\n"
-                      "/dica - Para receber uma dica aleatória\n"
-                      "/equipes - Para saber mais sobre as equipes da Furia\n"
-                      "/ajuda - Para ver esta mensagem de ajuda novamente")
+    user_id = msg.from_user.id
+    if idiomas_usuarios.get(user_id, "pt") == "en":
+        bot.reply_to(msg, "I'm here to help! Here are some commands you can use:\n\n"
+                          "/start - To start a conversation with me\n"
+                          "/info - To learn more about me\n"
+                          "/tip - To receive a random tip\n"
+                          "/teams - To learn more about Furia's teams\n"
+                          "/help - To see this help message again")
+    else:
+        bot.reply_to(msg, "Estou aqui para ajudar! Aqui estão alguns comandos que você pode usar:\n\n"
+                          "/start - Para iniciar uma conversa comigo\n"
+                          "/info - Para saber mais sobre mim\n"
+                          "/dica - Para receber uma dica aleatória\n"
+                          "/equipes - Para saber mais sobre as equipes da Furia\n"
+                          "/ajuda - Para ver esta mensagem de ajuda novamente")
+
+# Comando /dica ou /tip atualizado
+@bot.message_handler(commands=['dica', 'tip'])
+def dica(msg: telebot.types.Message):
+    user_id = msg.from_user.id
+    if idiomas_usuarios.get(user_id, "pt") == "en":
+        tips = [
+            "Have you bought Furia's Adidas jersey? Check it out on the [website!](https://www.furia.gg)",
+            "Furia has an amazing community of fans! Check out our [Instagram](https://www.instagram.com/furiagg)",
+            "Furia has participated in several international championships! [Click here to learn more](https://pt.wikipedia.org/wiki/Furia_Esports)",
+            "Furia has a team of talented and dedicated players! To learn more, use the /teams command.",
+            "Did you know that Furia has a 7-a-side football team? They compete in the Kings League! [Click here](https://youtube.com/@furiaf.c.?si=9P_ZQmZcRGer7z__) to see more content on YouTube.",
+            "Furia also hosts events and tournaments for fans! Check out our [Twitter](https://x.com/FURIA) or [Instagram](https://www.instagram.com/furiagg).",
+            "Did you know that Furia has a VALORANT team? They are amazing! Check out their [YouTube channel](https://www.youtube.com/@FURIAggVAL).",
+            "Furia is known for its strong presence on social media! Follow us on [Instagram](https://www.instagram.com/furiagg).",
+            "Furia has an incredible CS:GO team! They compete in international tournaments and are highly respected in the scene! Check out their [YouTube channel](https://www.youtube.com/@FURIAggCS).",
+            "Furia has a League of Legends team that competes in national and international tournaments! Check out their [YouTube channel](https://www.youtube.com/@FURIAggLOL).",
+        ]
+        bot.reply_to(msg, random.choice(tips), parse_mode='Markdown')
+    else:
+        dicas = [
+            "Já comprou a camiseta da Furia com a Adidas? Dá uma olhada no [site!](https://www.furia.gg)",
+            "A Furia tem uma comunidade incrível de fãs! Dá uma olhada no nosso [Instagram](https://www.instagram.com/furiagg)",
+            "A Furia já participou de vários campeonatos internacionais! [Clique aqui para saber mais](https://pt.wikipedia.org/wiki/Furia_Esports)",
+            "A Furia tem uma equipe de jogadores talentosos e dedicados! Para saber mais, use o comando /equipes.",
+            "Você sabia que a Furia tem uma equipe de Futebol de 7? Eles competem na Kings League! [Clique aqui](https://youtube.com/@furiaf.c.?si=9P_ZQmZcRGer7z__) para ver mais no YouTube.",
+            "A Furia também realiza eventos e torneios para os fãs! Confira no [Twitter](https://x.com/FURIA) ou no [Instagram](https://www.instagram.com/furiagg).",
+            "Você sabia que a Furia tem uma equipe de VALORANT? Eles são incríveis! Confira no [YouTube](https://www.youtube.com/@FURIAggVAL).",
+            "A Furia é conhecida por sua presença forte nas redes sociais! Siga-nos no [Instagram](https://www.instagram.com/furiagg).",
+            "A Furia tem uma equipe de CS:GO incrível! Confira no [YouTube](https://www.youtube.com/@FURIAggCS).",
+            "A Furia tem uma equipe de League of Legends que compete em torneios nacionais e internacionais! Confira no [YouTube](https://www.youtube.com/@FURIAggLOL).",
+        ]
+        bot.reply_to(msg, random.choice(dicas), parse_mode='Markdown')
 
 # Comando 'equipes' atualizado
-@bot.message_handler(commands=['equipes'])
+@bot.message_handler(commands=['equipes', 'teams'])
 def equipes(msg: telebot.types.Message):
-    bot.reply_to(msg, "As equipes da Furia são formadas por jogadores talentosos e dedicados.\n")
-    bot.reply_to(msg, "Aqui estão algumas das equipes:\n\n"
-                      "1. Furia CS:GO - A equipe de Counter-Strike: Global Offensive.\n"
-                      "2. Furia VALORANT - A equipe de VALORANT.\n"
-                      "3. Furia League of Legends - A equipe de League of Legends.\n"
-                      "4. Furia Futebol de 7 - A equipe de Futebol de 7(Kings League).\n"
-                      "5. Furia Rainbow Six - A equipe de Rainbow Six Siege.\n"
-                      "Para mais informações sobre cada equipe, use o comando /valorant, /csgo, /lol, /fut7 ou /r6\n\n")
-    parse_mode = 'Markdown'
+    user_id = msg.from_user.id
+    if idiomas_usuarios.get(user_id, "pt") == "en":
+        bot.reply_to(msg, "Furia's teams are formed by talented and dedicated players.\n")
+        bot.reply_to(msg, "Here are some of the teams:\n\n"
+                          "1. Furia CS:GO - The Counter-Strike: Global Offensive team.\n"
+                          "2. Furia VALORANT - The VALORANT team.\n"
+                          "3. Furia League of Legends - The League of Legends team.\n"
+                          "4. Furia 7-a-side Football - The 7-a-side football team (Kings League).\n"
+                          "5. Furia Rainbow Six - The Rainbow Six Siege team.\n"
+                          "For more information about each team, use the command /valorant, /csgo, /lol, /fut7 or /r6\n\n")
+    else:
+        bot.reply_to(msg, "As equipes da Furia são formadas por jogadores talentosos e dedicados.\n")
+        bot.reply_to(msg, "Aqui estão algumas das equipes:\n\n"
+                          "1. Furia CS:GO - A equipe de Counter-Strike: Global Offensive.\n"
+                          "2. Furia VALORANT - A equipe de VALORANT.\n"
+                          "3. Furia League of Legends - A equipe de League of Legends.\n"
+                          "4. Furia Futebol de 7 - A equipe de Futebol de 7(Kings League).\n"
+                          "5. Furia Rainbow Six - A equipe de Rainbow Six Siege.\n"
+                          "Para mais informações sobre cada equipe, use o comando /valorant, /csgo, /lol, /fut7 ou /r6\n\n")
+
 @bot.message_handler(commands=['valorant'])
 def valorant(msg: telebot.types.Message):
-    bot.reply_to(msg, "Você sabia que Furia tem uma equipe de VALORANT? Eles são incríveis!\nAcesse o canal do [Youtube](https://www.youtube.com/@FURIAggVAL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.valorant/?hl=pt-br) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
+    user_id = msg.from_user.id
+    if idiomas_usuarios.get(user_id, "pt") == "en":
+        bot.reply_to(msg, "Did you know that Furia has a VALORANT team? They are amazing!\nCheck out their [YouTube channel](https://www.youtube.com/@FURIAggVAL)\nCheck out their [Twitter](https://x.com/FURIA)\nCheck out their [Instagram](https://www.instagram.com/furia.valorant/?hl=pt-br)\nCheck out their [TikTok](https://www.tiktok.com/@furiagg)\n")
+    else:
+        bot.reply_to(msg, "Você sabia que Furia tem uma equipe de VALORANT? Eles são incríveis!\nAcesse o canal do [Youtube](https://www.youtube.com/@FURIAggVAL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.valorant/?hl=pt-br) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 @bot.message_handler(commands=['csgo'])
 def csgo(msg: telebot.types.Message):
-    bot.reply_to(msg, "A Furia tem uma equipe de CS:GO incrível! Eles competem em torneios internacionais e são muito respeitados na cena!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggCS)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
+    user_id = msg.from_user.id
+    if idiomas_usuarios.get(user_id, "pt") == "en":
+        bot.reply_to(msg, "Furia has an incredible CS:GO team! They compete in international tournaments and are highly respected in the scene!\nCheck out their [YouTube channel](https://www.youtube.com/@FURIAggCS)\nCheck out their [Twitter](https://x.com/FURIA)\nCheck out their [Instagram](https://www.instagram.com/furiagg)\nCheck out their [TikTok](https://www.tiktok.com/@furiagg)\n")
+    else:
+        bot.reply_to(msg, "A Furia tem uma equipe de CS:GO incrível! Eles competem em torneios internacionais e são muito respeitados na cena!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggCS)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furiagg) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 @bot.message_handler(commands=['lol'])
 def lol(msg: telebot.types.Message):
-    bot.reply_to(msg, "A Furia tem uma equipe de League of Legends que compete em torneios nacionais e internacionais! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggLOL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.lol/?hl=pt-br \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
-
+    user_id = msg.from_user.id
+    if idiomas_usuarios.get(user_id, "pt") == "en":
+        bot.reply_to(msg, "Furia has a League of Legends team that competes in national and international tournaments! They are known for their aggressive and exciting playstyle!\nCheck out their [YouTube channel](https://www.youtube.com/@FURIAggLOL)\nCheck out their [Twitter](https://x.com/FURIA)\nCheck out their [Instagram](https://www.instagram.com/furia.lol/?hl=pt-br)\nCheck out their [TikTok](https://www.tiktok.com/@furiagg)\n")
+    else:
+        bot.reply_to(msg, "A Furia tem uma equipe de League of Legends que compete em torneios nacionais e internacionais! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggLOL)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.lol/?hl=pt-br \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 @bot.message_handler(commands=['fut7'])
 def fut7(msg: telebot.types.Message):
+    user_id = msg.from_user.id
+    if idiomas_usuarios.get(user_id, "pt") == "en":
+        bot.reply_to(msg, "Furia has a 7-a-side football team that competes in the Kings League! They are known for their aggressive and exciting playstyle!\nCheck out their [YouTube channel](https://youtube.com/@furiaf.c.?si=9P_ZQmZcRGer7z__)\nCheck out their [Twitter](https://x.com/FURIA)\nCheck out their [Instagram](https://www.instagram.com/furia.football/)\nCheck out their [TikTok](https://www.tiktok.com/@furiagg)\n")
+    else:
         bot.reply_to(msg, "A Furia tem uma equipe de Futebol de 7 que compete na Kings League! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://youtube.com/@furiaf.c.?si=9P_ZQmZcRGer7z__)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.football/) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 @bot.message_handler(commands=['r6'])
 def r6(msg: telebot.types.Message):
-    bot.reply_to(msg, "A Furia tem uma equipe de Rainbow Six Siege que compete em torneios nacionais e internacionais! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggR6)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.r6/?hl=pt-br) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
-
+    user_id = msg.from_user.id
+    if idiomas_usuarios.get(user_id, "pt") == "en":
+        bot.reply_to(msg, "Furia has a Rainbow Six Siege team that competes in national and international tournaments! They are known for their aggressive and exciting playstyle!\nCheck out their [YouTube channel](https://www.youtube.com/@FURIAggR6)\nCheck out their [Twitter](https://x.com/FURIA)\nCheck out their [Instagram](https://www.instagram.com/furia.r6/?hl=pt-br)\nCheck out their [TikTok](https://www.tiktok.com/@furiagg)\n")
+    else:
+        bot.reply_to(msg, "A Furia tem uma equipe de Rainbow Six Siege que compete em torneios nacionais e internacionais! Eles são conhecidos por seu estilo de jogo agressivo e emocionante!\n Acesse o canal do [Youtube](https://www.youtube.com/@FURIAggR6)\nAcesse o [Twitter / X](https://x.com/FURIA)\n Acesse o [Instagram](https://www.instagram.com/furia.r6/?hl=pt-br) \n Acesse o [TikTok](https://www.tiktok.com/@furiagg) \n")
 
 @bot.message_handler(func=lambda msg: True)  # Captura todas as mensagens
 def comandos_sem_barra(msg: telebot.types.Message):
@@ -154,7 +293,16 @@ def comandos_sem_barra(msg: telebot.types.Message):
     palavras_start = ['oi', 'ola', 'olá', 'oii', 'eai', 'salve', 'salveee''salvee', 
                       'boa', 'bomdia', 'boanoite', 'boa tarde', 'bom dia', 
                       'boa noite', 'boatarde', 'tudo bem', 'tudo certo', 'tudobem',
-                      'tudocerto', 'tudo certo?', 'tudo bem?', 'oi bot', 'ola bot',]
+                      'tudocerto', 'tudo certo?', 'tudo bem?', 'oi bot', 'ola bot','opa', 'eai bot',
+                      'salve bot', 'salveee bot', 'salvee bot', 'boa bot', 'bomdia bot', 'Opa', 'Oi',
+                      'Olá','Oi bot','Oi Bot','Ola bot','Ola Bot','Eai bot','Eai Bot','Salve bot','Salve Bot',
+                      'Boa bot','Boa Bot','Bomdia bot','Bomdia Bot','Boanoite bot','Boanoite Bot','Boatarde bot','Boatarde Bot',
+                      'Bom dia bot','Bom dia Bot','Boa noite bot','Boa noite Bot','Boa tarde bot','Boa tarde Bot',
+                      'Tudo bem bot','Tudo bem Bot','Tudo certo bot','Tudo certo Bot','Tudobem bot','Tudobem Bot',
+                      'hi','hello','hey','hi bot','hello bot','hey bot',
+                      'hi Bot','hello Bot','hey Bot','Hi bot','Hello bot','Hey bot',
+                      'começar','começar','começar bot','começar Bot','Começar bot','Começar Bot',
+                      'Começar','Começar Bot','Começar bot','Começar Bot','começar bot','começar Bot',]
 
     if texto in palavras_start:
         start(msg)  # Chama a função do comando /start
@@ -225,5 +373,120 @@ def influencia(msg: telebot.types.Message):
                       "48. Livinhazika - [Twitch](https://www.twitch.tv/livinhazika)\n"
                       "49. Kvondoom - [Twitch](https://www.twitch.tv/kvondoom)\n"                      )
     
+# Declaração da variável TARGET_CHANNEL
+# Lista de streamers da Furia
+    TARGET_CHANNEL = [
+    'gafallen',
+    'brino',
+    'mount',
+    'paulanobre',
+    'sofiaespanha',
+    'xarola_',
+    'otsukaxd',
+    'mwzera',
+    'jxmo',
+    'furiatv',
+    'fittipaldibrothers',
+    'breeze_fps',
+    'immadness',
+    'gabssf',
+    'pokizgames',
+    'kscerato',
+    'ikee',
+    'chelok1ng',
+    'qckv',
+    'raf1nhafps',
+    'crisguedes',
+    'yuurih',
+    'khalil_fps',
+    'vaxlon',
+    'daaygamer_',
+    'rafaelmoraesgm',
+    'yanxnz_',
+    'herdszz',
+    'havocfps1',
+    'ablej',
+    'izaa',
+    'xeratricky',
+    'upluanleal',
+    'ivdmaluco',
+    'igoorctg',
+    'dhinoff',
+    'omanelzin_',
+    'kaah',
+    'guerri',
+    'kheyze7',
+    'anamariabrogui',
+    'maestropierre',
+    'afternobelo',
+    'zarakicoach',
+    'highs',
+    'murillomellobr',
+    'dezorganizada',
+    'livinhazika',
+    'kvondoom',
+]
+
+# Função para verificar se os streamers estão ao vivo
+def verificar_lives():
+    access_token = get_twitch_access_token()
+    headers = {
+        "Client-ID": "0v1tqtpk3qys3c6u71nwrwp7t7zzvl",
+        "Authorization": f"Bearer {access_token}"
+    }
+    url = "https://api.twitch.tv/helix/streams"
+    params = {
+        "user_login": TARGET_CHANNEL  # Lista de streamers
+    }
+    response = requests.get(url, headers=headers, params={"user_login": TARGET_CHANNEL})
+    response.raise_for_status()
+    data = response.json()
+
+    # Retorna uma lista de streamers que estão ao vivo
+    return [stream["user_name"] for stream in data["data"]]
+
+# Comando para ativar notificações de lives
+@bot.message_handler(commands=['notificar', 'notify'])
+def notificar(msg: telebot.types.Message):
+    user_id = msg.from_user.id
+    if user_id not in usuarios_autorizados:
+        usuarios_autorizados[user_id] = True  # Adiciona o usuário à lista de autorizados
+        if idiomas_usuarios.get(user_id, "pt") == "en":
+            bot.reply_to(msg, "You have activated live notifications! We will send updates whenever a Furia streamer goes live.")
+        else:
+            bot.reply_to(msg, "Você ativou as notificações de lives! Enviaremos atualizações sempre que um streamer da Furia estiver ao vivo.")
+    else:
+        if idiomas_usuarios.get(user_id, "pt") == "en":
+            bot.reply_to(msg, "You are already subscribed to receive live notifications!")
+        else:
+            bot.reply_to(msg, "Você já está inscrito para receber notificações de lives!")
+
+# Função para enviar notificações sobre lives
+def enviar_notificacoes_lives():
+    while True:
+        try:
+            streamers_ao_vivo = verificar_lives()
+            if streamers_ao_vivo:
+                for user_id in usuarios_autorizados:
+                    idioma = idiomas_usuarios.get(user_id, "pt")  # Obtém o idioma do usuário (padrão: português)
+                    if idioma == "en":
+                        mensagem = "🔴 **Live on Twitch!**\nThe following streamers are live now:\n\n"
+                        mensagem += "\n".join([f"- {streamer}" for streamer in streamers_ao_vivo])
+                        mensagem += "\n\nVisit Twitch to watch!"
+                    else:
+                        mensagem = "🔴 **Live na Twitch!**\nOs seguintes streamers estão ao vivo agora:\n\n"
+                        mensagem += "\n".join([f"- {streamer}" for streamer in streamers_ao_vivo])
+                        mensagem += "\n\nAcesse a Twitch para assistir!"
+                    try:
+                        bot.send_message(user_id, mensagem, parse_mode='Markdown')
+                    except Exception as e:
+                        print(f"Erro ao enviar mensagem para o usuário {user_id}: {e}")
+            time.sleep(300)  # Verifica a cada 5 minutos
+        except Exception as e:
+            print(f"Erro ao verificar lives: {e}")
+            time.sleep(300)  # Aguarda 5 minutos antes de tentar novamente
+
+# Inicia a verificação de lives em uma thread separada
+threading.Thread(target=enviar_notificacoes_lives, daemon=True).start()
 
 bot.infinity_polling()
